@@ -1,0 +1,9 @@
+bge-m3/
+chroma_db/
+data/
+env/
+.cache/
+__pycache__/
+models/
+qwen3.5-9b/
+llama.cpp/

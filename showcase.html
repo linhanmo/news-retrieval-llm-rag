@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时间敏感型新闻智能问答系统</title>
+  <style>
+    :root {
+      --panel: rgba(10, 23, 41, 0.88);
+      --panel-strong: rgba(14, 31, 56, 0.94);
+      --border: rgba(122, 162, 255, 0.22);
+      --text: #edf3ff;
+      --muted: #9fb4d1;
+      --primary: #65a3ff;
+      --primary-soft: rgba(101, 163, 255, 0.16);
+      --accent: #5eead4;
+      --gold: #f6c66c;
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+      --radius: 22px;
+      --font: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(52, 92, 184, 0.28), transparent 34%),
+        radial-gradient(circle at top right, rgba(94, 234, 212, 0.14), transparent 24%),
+        linear-gradient(180deg, #060d17 0%, #0b1422 100%);
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    body {
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1460px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      padding: 24px 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: #d6e6ff;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      box-shadow: 0 0 14px rgba(94, 234, 212, 0.7);
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .hero h2 {
+      margin-top: 12px;
+      font-size: 36px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .hero-tags {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tag,
+    .kpi-chip,
+    .source-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #dbe8ff;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .controls {
+      padding: 18px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: 200ms ease;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #6ba8ff, #54e3cf);
+      color: #03121d;
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    .stage-grid,
+    .bottom-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .stage-grid {
+      grid-template-columns: minmax(0, 1.02fr) minmax(380px, 0.98fr);
+    }
+
+    .bottom-grid {
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    }
+
+    .section {
+      padding: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-title h3 {
+      font-size: 18px;
+    }
+
+    .section-title span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .query-box,
+    .stream-box {
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 18px;
+    }
+
+    .query-label,
+    .report-section-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+    }
+
+    .query-input {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      padding: 14px 16px;
+      font: inherit;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .query-input:focus {
+      outline: none;
+      border-color: rgba(101, 163, 255, 0.42);
+      box-shadow: 0 0 0 3px rgba(101, 163, 255, 0.12);
+    }
+
+    .query-status {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .retrieval-grid,
+    .evidence-list,
+    .risk-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .retrieval-card,
+    .evidence-item,
+    .risk-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .retrieval-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .time-pill {
+      font-size: 12px;
+      color: var(--gold);
+    }
+
+    .retrieval-card h4,
+    .evidence-item h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #ffffff;
+    }
+
+    .retrieval-card p,
+    .evidence-item p,
+    .risk-item p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .risk-item strong {
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .response-panel {
+      background: var(--panel-strong);
+    }
+
+    .stream-box {
+      min-height: 420px;
+      max-height: 420px;
+      overflow: auto;
+      font-size: 15px;
+      line-height: 1.9;
+      white-space: normal;
+    }
+
+    .report-answer {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .report-summary {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.9;
+    }
+
+    .report-points,
+    .source-overview-list {
+      display: grid;
+      gap: 10px;
+      margin: 12px 0 18px;
+    }
+
+    .report-point,
+    .source-overview-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .report-kpis {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    thead {
+      background: rgba(101, 163, 255, 0.12);
+    }
+
+    th, td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: top;
+    }
+
+    tbody tr {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .highlight {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    @media (max-width: 1260px) {
+      .stage-grid,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 14px;
+      }
+
+      .hero {
+        padding: 20px;
+      }
+
+      .hero h2 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero panel">
+      <div class="eyebrow">Qwen3.5-9B + ChronoQA</div>
+      <h2>新闻智能问答系统</h2>
+      <p>页面已接入本地真实流程，可直接发起查询并展示检索证据、结构化报告和媒体差异分析。</p>
+      <div class="hero-tags">
+        <span class="tag">本地 LLM：Qwen3.5-9B</span>
+        <span class="tag">数据集：ChronoQA</span>
+        <span class="tag">检索方式：RAG 证据召回</span>
+      </div>
+    </section>
+
+    <section class="controls panel">
+      <button class="primary" id="runBtn">运行真实查询</button>
+      <button class="secondary" id="presetOneBtn">填入示例一</button>
+      <button class="secondary" id="presetTwoBtn">填入示例二</button>
+      <button class="secondary" id="resetBtn">重置页面</button>
+    </section>
+
+    <section class="stage-grid">
+      <section class="section panel">
+        <div class="section-title">
+          <h3>查询与检索证据</h3>
+          <span>本地 Chroma 检索结果</span>
+        </div>
+
+        <div class="query-box">
+          <div class="query-label">输入问题</div>
+          <textarea class="query-input" id="queryInput" placeholder="例如：2023年诺贝尔文学奖得主是谁？"></textarea>
+          <div class="query-status" id="queryStatus">输入问题后点击“运行真实查询”。</div>
+        </div>
+
+        <div class="retrieval-grid" id="retrievalGrid"></div>
+      </section>
+
+      <section class="section panel response-panel">
+        <div class="section-title">
+          <h3>生成报告</h3>
+          <span>本地 Qwen3.5-9B 真实输出</span>
+        </div>
+
+        <div class="stream-box" id="streamBox">这里会显示本地模型生成的结构化报告。</div>
+      </section>
+    </section>
+
+    <section class="bottom-grid">
+      <section class="section panel">
+        <div class="section-title">
+          <h3>媒体对比</h3>
+          <span>来源侧重点与用词差异</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>来源</th>
+              <th>国家</th>
+              <th>侧重点</th>
+              <th>用词特征</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonTable"></tbody>
+        </table>
+      </section>
+
+      <section class="section panel">
+        <div class="section-title">
+          <h3>引用证据</h3>
+          <span>模型回答所依据的原文摘录</span>
+        </div>
+        <div class="evidence-list" id="evidenceList"></div>
+      </section>
+    </section>
+  </div>
+
+  <script>
+    const EXAMPLE_QUERY_ONE = "2023年诺贝尔文学奖得主是谁？";
+    const EXAMPLE_QUERY_TWO = "对比一下近三年来诺贝尔文学奖得主的国籍变化？";
+
+    const queryInput = document.getElementById("queryInput");
+    const queryStatus = document.getElementById("queryStatus");
+    const retrievalGrid = document.getElementById("retrievalGrid");
+    const streamBox = document.getElementById("streamBox");
+    const evidenceList = document.getElementById("evidenceList");
+    const comparisonTable = document.getElementById("comparisonTable");
+    const runBtn = document.getElementById("runBtn");
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function resetUI() {
+      queryInput.value = "";
+      queryStatus.textContent = "输入问题后点击“运行真实查询”。";
+      retrievalGrid.innerHTML = "";
+      streamBox.innerHTML = "这里会显示本地模型生成的结构化报告。";
+      evidenceList.innerHTML = "";
+      comparisonTable.innerHTML = "";
+    }
+
+    function setLoadingState(query) {
+      queryStatus.textContent = `正在处理：${query}`;
+      retrievalGrid.innerHTML = `
+        <article class="retrieval-card">
+          <div class="retrieval-head">
+            <span class="source-pill">本地检索中</span>
+            <span class="time-pill">请稍候</span>
+          </div>
+          <h4>${escapeHtml(query)}</h4>
+          <p>正在从 Chroma 向量库中召回相关新闻，并调用本地 Qwen3.5-9B 生成结构化报告。</p>
+        </article>
+      `;
+      streamBox.innerHTML = "正在调用本地真实流程，请稍候...";
+      evidenceList.innerHTML = "";
+      comparisonTable.innerHTML = "";
+    }
+
+    function renderRetrievals(items) {
+      retrievalGrid.innerHTML = "";
+      if (!items.length) {
+        retrievalGrid.innerHTML = `
+          <article class="retrieval-card">
+            <h4>未检索到可展示证据</h4>
+            <p>当前查询没有返回适合展示的检索片段。</p>
+          </article>
+        `;
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "retrieval-card";
+        card.innerHTML = `
+          <div class="retrieval-head">
+            <span class="source-pill">${escapeHtml(item["来源"] || "未知来源")}</span>
+            <span class="time-pill">${escapeHtml(item["发布时间"] || "未知时间")}</span>
+          </div>
+          <h4>${escapeHtml(item["标题"] || "未提供标题")}</h4>
+          <p>${escapeHtml(item["内容片段"] || "")}</p>
+        `;
+        retrievalGrid.appendChild(card);
+      });
+    }
+
+    function renderReport(report, elapsedSeconds) {
+      const answerCard = report["回答卡片"] || {};
+      const overview = report["报告概览"] || {};
+      const keyPoints = report["关键信息"] || [];
+      const riskTerms = report["倾向提示"] || [];
+      const sourceOverview = report["检索来源"] || [];
+      const pointsHtml = keyPoints.length
+        ? `
+            <div class="report-points">
+              ${keyPoints.map((item) => `
+                <div class="report-point">${escapeHtml(item)}</div>
+              `).join("")}
+            </div>
+          `
+        : `<p class="report-summary">当前结果没有提炼出可展示的关键信息。</p>`;
+      const riskHtml = riskTerms.length
+        ? `
+            <div class="risk-list">
+              ${riskTerms.map((item) => `
+                <div class="risk-item">
+                  <strong>${escapeHtml(item["词语"])} · ${escapeHtml(item["类别"])} · ${escapeHtml(item["识别方式"])}</strong>
+                  <p>${escapeHtml(item["原因"] || "")}</p>
+                </div>
+              `).join("")}
+            </div>
+          `
+        : `<p class="report-summary">未发现明显高风险词。</p>`;
+      const sourceOverviewHtml = sourceOverview.length
+        ? `
+            <div class="source-overview-list">
+              ${sourceOverview.map((item) => `
+                <div class="source-overview-item">
+                  ${escapeHtml(item["来源"] || "未知来源")} · ${escapeHtml(item["国家"] || "未知")} · ${escapeHtml(item["条数"] ?? 0)} 条
+                </div>
+              `).join("")}
+            </div>
+          `
+        : `<p class="report-summary">当前结果没有返回来源概览。</p>`;
+
+      streamBox.innerHTML = `
+        <div class="report-section-title">直接回答</div>
+        <div class="report-answer">${escapeHtml(answerCard["直接回答"] || report["直接回答"] || report["中立摘要"] || "未生成结果")}</div>
+        <div class="report-kpis">
+          <span class="kpi-chip">状态 ${escapeHtml(answerCard["回答状态"] || overview["回答状态"] || "未知")}</span>
+          <span class="kpi-chip">来源数量 ${escapeHtml(overview["来源数量"] ?? 0)}</span>
+          <span class="kpi-chip">证据数量 ${escapeHtml(overview["证据数量"] ?? 0)}</span>
+          <span class="kpi-chip">风险词数量 ${escapeHtml(overview["风险词数量"] ?? 0)}</span>
+          <span class="kpi-chip">耗时 ${escapeHtml(elapsedSeconds)} 秒</span>
+        </div>
+        <div class="report-section-title">关键信息</div>
+        ${pointsHtml}
+        <div class="report-section-title">中立摘要</div>
+        <div class="report-summary">${escapeHtml(report["中立摘要"] || "")}</div>
+        <div class="report-section-title">来源概览</div>
+        ${sourceOverviewHtml}
+        <div class="report-section-title">倾向提示</div>
+        ${riskHtml}
+      `;
+    }
+
+    function renderTable(rows) {
+      comparisonTable.innerHTML = "";
+      if (!rows.length) {
+        comparisonTable.innerHTML = '<tr><td colspan="4">当前结果没有返回媒体对比信息。</td></tr>';
+        return;
+      }
+
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(row["来源"] || "")}</td>
+          <td class="highlight">${escapeHtml(row["国家"] || "")}</td>
+          <td>${escapeHtml(row["侧重点"] || "")}</td>
+          <td>${escapeHtml(row["用词特征"] || "")}</td>
+        `;
+        comparisonTable.appendChild(tr);
+      });
+    }
+
+    function renderEvidence(items) {
+      evidenceList.innerHTML = "";
+      if (!items.length) {
+        evidenceList.innerHTML = `
+          <article class="evidence-item">
+            <h4>暂无证据摘录</h4>
+            <p>当前结果没有返回可展示的证据内容。</p>
+          </article>
+        `;
+        return;
+      }
+
+      items.forEach((item) => {
+        const node = document.createElement("article");
+        node.className = "evidence-item";
+        node.innerHTML = `
+          <h4>${escapeHtml(item["来源"] || "未知来源")}</h4>
+          <p>${escapeHtml(item["摘录"] || "")}</p>
+        `;
+        evidenceList.appendChild(node);
+      });
+    }
+
+    async function runQuery() {
+      const query = queryInput.value.trim();
+      if (!query) {
+        queryStatus.textContent = "请先输入查询内容。";
+        return;
+      }
+
+      runBtn.disabled = true;
+      setLoadingState(query);
+
+      try {
+        const response = await fetch("/api/query", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            query,
+            top_k: 6
+          })
+        });
+
+        const payload = await response.json();
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || "查询失败");
+        }
+
+        const report = payload.report || {};
+        queryStatus.textContent = `查询完成，结果已保存到：${payload.saved_to || "本地结果文件"}`;
+        renderRetrievals(report["检索概览"] || []);
+        renderReport(report, payload.elapsed_seconds ?? "-");
+        renderTable(report["媒体对比"] || []);
+        renderEvidence(report["证据"] || []);
+      } catch (error) {
+        queryStatus.textContent = `查询失败：${error.message}`;
+        streamBox.textContent = `查询失败：${error.message}`;
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    document.getElementById("runBtn").addEventListener("click", runQuery);
+    document.getElementById("presetOneBtn").addEventListener("click", () => {
+      queryInput.value = EXAMPLE_QUERY_ONE;
+      queryStatus.textContent = "已填入示例一，可直接运行。";
+    });
+    document.getElementById("presetTwoBtn").addEventListener("click", () => {
+      queryInput.value = EXAMPLE_QUERY_TWO;
+      queryStatus.textContent = "已填入示例二，可直接运行。";
+    });
+    document.getElementById("resetBtn").addEventListener("click", resetUI);
+
+    resetUI();
+    queryInput.value = EXAMPLE_QUERY_ONE;
+  </script>
+</body>
+</html>
