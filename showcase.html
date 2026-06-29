@@ -417,7 +417,7 @@
 
         <div class="query-box">
           <div class="query-label">输入问题</div>
-          <textarea class="query-input" id="queryInput" placeholder="例如：2023年诺贝尔文学奖得主是谁？"></textarea>
+          <textarea class="query-input" id="queryInput" placeholder="例如：2023年发布的重要人工智能大模型有哪些？"></textarea>
           <div class="query-status" id="queryStatus">输入问题后点击“运行真实查询”。</div>
         </div>
 
@@ -464,8 +464,8 @@
   </div>
 
   <script>
-    const EXAMPLE_QUERY_ONE = "2023年诺贝尔文学奖得主是谁？";
-    const EXAMPLE_QUERY_TWO = "对比一下近三年来诺贝尔文学奖得主的国籍变化？";
+    const EXAMPLE_QUERY_ONE = "2023年发布的重要人工智能大模型有哪些？";
+    const EXAMPLE_QUERY_TWO = "对比分析2022年和2023年全球科技公司裁员的规模。";
 
     const queryInput = document.getElementById("queryInput");
     const queryStatus = document.getElementById("queryStatus");
@@ -584,7 +584,6 @@
           <span class="kpi-chip">来源数量 ${escapeHtml(overview["来源数量"] ?? 0)}</span>
           <span class="kpi-chip">证据数量 ${escapeHtml(overview["证据数量"] ?? 0)}</span>
           <span class="kpi-chip">风险词数量 ${escapeHtml(overview["风险词数量"] ?? 0)}</span>
-          <span class="kpi-chip">耗时 ${escapeHtml(elapsedSeconds)} 秒</span>
         </div>
         <div class="report-section-title">关键信息</div>
         ${pointsHtml}

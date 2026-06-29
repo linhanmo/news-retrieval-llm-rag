@@ -7,3 +7,4 @@ __pycache__/
 models/
 qwen3.5-9b/
 llama.cpp/
+bge-m3_portable/

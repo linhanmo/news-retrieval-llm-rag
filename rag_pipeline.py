@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
+from json import JSONDecodeError
 from typing import Any, Callable
 
 import chromadb
@@ -187,13 +188,105 @@ class NewsRAGPipeline:
 
     @staticmethod
     def safe_parse_json(raw_text: str) -> dict[str, Any]:
-        try:
-            return json.loads(raw_text)
-        except json.JSONDecodeError:
-            match = re.search(r"\{[\s\S]*\}", raw_text)
+        candidates: list[str] = []
+
+        def add_candidate(value: str) -> None:
+            normalized = value.strip()
+            if normalized and normalized not in candidates:
+                candidates.append(normalized)
+
+        add_candidate(raw_text)
+        add_candidate(NewsRAGPipeline._strip_code_fences(raw_text))
+
+        extracted = NewsRAGPipeline._extract_outer_json_object(raw_text)
+        if extracted:
+            add_candidate(extracted)
+            add_candidate(NewsRAGPipeline._strip_code_fences(extracted))
+
+        for candidate in list(candidates):
+            add_candidate(NewsRAGPipeline._remove_trailing_commas(candidate))
+
+        last_error: JSONDecodeError | None = None
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except JSONDecodeError as exc:
+                last_error = exc
+
+        return NewsRAGPipeline._build_fallback_output(raw_text, last_error)
+
+    @staticmethod
+    def _strip_code_fences(text: str) -> str:
+        normalized = text.strip()
+        normalized = re.sub(r"^```(?:json)?\s*", "", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r"\s*```$", "", normalized)
+        return normalized.strip()
+
+    @staticmethod
+    def _extract_outer_json_object(text: str) -> str:
+        start = text.find("{")
+        if start == -1:
+            return ""
+
+        depth = 0
+        in_string = False
+        escaped = False
+        for index in range(start, len(text)):
+            char = text[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : index + 1]
+        return ""
+
+    @staticmethod
+    def _remove_trailing_commas(text: str) -> str:
+        return re.sub(r",\s*([}\]])", r"\1", text)
+
+    @staticmethod
+    def _extract_summary(raw_text: str) -> str:
+        patterns = (
+            r'"中立摘要"\s*:\s*"((?:[^"\\]|\\.)*)"',
+            r'"neutral_summary"\s*:\s*"((?:[^"\\]|\\.)*)"',
+        )
+        for pattern in patterns:
+            match = re.search(pattern, raw_text, flags=re.DOTALL)
             if match:
-                return json.loads(match.group(0))
-            raise
+                try:
+                    return json.loads(f'"{match.group(1)}"')
+                except JSONDecodeError:
+                    return match.group(1).replace('\\"', '"').replace("\\n", "\n").strip()
+
+        cleaned = NewsRAGPipeline._strip_code_fences(raw_text)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if not cleaned:
+            return "模型输出解析失败，且未提取到可用摘要。"
+        return cleaned[:500]
+
+    @staticmethod
+    def _build_fallback_output(raw_text: str, error: JSONDecodeError | None) -> dict[str, Any]:
+        summary = NewsRAGPipeline._extract_summary(raw_text)
+        if error is not None:
+            summary = f"{summary}\n\n[解析提示] 模型返回了格式不完全合法的 JSON，已自动降级为文本摘要。"
+        return {
+            "中立摘要": summary,
+            "媒体对比": [],
+            "潜在意识形态词": [],
+            "证据": [],
+        }
 
     @staticmethod
     def normalize_model_output(parsed: dict[str, Any]) -> dict[str, Any]:
